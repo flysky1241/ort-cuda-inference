@@ -1,0 +1,10 @@
+{
+  "name":"my-detect",
+  "dependencies": [
+    {
+      "name":"onnxruntime",
+      "default-features":false,
+      "features":["cuda"]
+    }
+  ]
+}

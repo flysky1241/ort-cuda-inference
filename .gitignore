@@ -1,0 +1,132 @@
+# ==================================================
+# Visual Studio / VSCode 用户环境
+# ==================================================
+
+# Visual Studio 缓存
+/.vs/
+
+# VSCode 本机配置
+/.vscode/
+
+# 编辑器和系统临时文件
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.swp
+*.tmp
+*~
+.DS_Store
+Thumbs.db
+
+
+# ==================================================
+# CMake 构建目录
+# ==================================================
+
+# 你当前实际使用的 CMake 构建目录
+/out/
+
+# 旧的或备用 build 目录
+/build/
+
+# 其他常见 CMake 构建目录
+/cmake-build-*/
+**/cmake-build-*/
+
+# CMake 生成文件
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+install_manifest.txt
+
+# CMake File API
+.cmake/api/
+
+# CMake 用户本机预设，不应上传
+CMakeUserPresets.json
+
+/rcc/model
+
+*.mp4
+
+# ==================================================
+# 编译数据库
+# ==================================================
+
+# 由 CMake 生成，里面通常包含本机绝对路径
+/compile_commands.json
+
+
+# ==================================================
+# vcpkg
+# ==================================================
+
+# vcpkg 安装生成的第三方库
+/vcpkg_installed/
+
+# vcpkg 下载及缓存目录
+/vcpkg_downloads/
+downloads/
+packages/
+
+# 注意：
+# vcpkg.json 应上传
+# vcpkg-configuration.json 应上传
+# overlay-ports 如果是你自己维护的端口，也应上传
+
+
+# ==================================================
+# C / C++ 编译结果
+# ==================================================
+
+*.o
+*.obj
+*.lo
+
+*.exe
+*.dll
+*.so
+*.so.*
+*.dylib
+
+*.lib
+*.a
+
+*.pdb
+*.ilk
+*.exp
+*.idb
+*.ipdb
+*.iobj
+
+*.pch
+*.gch
+
+*.out
+*.app
+
+
+# ==================================================
+# 项目运行输出
+# ==================================================
+
+# 你项目中的可执行文件输出目录
+/myDetect/bin/
+
+# 日志和崩溃文件
+*.log
+*.dmp
+core
+core.*
+
+
+# ==================================================
+# Ninja
+# ==================================================
+
+.ninja_deps
+.ninja_log
+build.ninja
+rules.ninja
