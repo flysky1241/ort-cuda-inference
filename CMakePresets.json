@@ -29,7 +29,14 @@
 
         "CUDNN": "C:/Program Files/NVIDIA/CUDNN/v9.24",
 
-        "PATH": "C:/Program Files/NVIDIA/CUDNN/v9.24/bin;C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.2/bin;$penv{PATH}"
+        "CUDNN_HOME": "C:/Program Files/NVIDIA/CUDNN/v9.24",
+
+        "TENSORRT_ROOT":"D:/thridy_src/TensorRT-10.10.0.31",
+        "TENSORRT_HOME":"D:/thridy_src/TensorRT-10.10.0.31",
+
+        "VCPKG_BINARY_SOURCES": "clear;files,D:/vcpkg-binary-cache/archives,readwrite",
+
+        "PATH": "D:/thridy_src/TensorRT-10.10.0.31/bin;D:/thridy_src/TensorRT-10.10.0.31/lib;C:/Program Files/NVIDIA/CUDNN/v9.24/bin;C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.2/bin;$penv{PATH}"
       },
 
       "cacheVariables": {
@@ -39,11 +46,12 @@
         "CMAKE_MAKE_PROGRAM": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe",
         "CMAKE_TOOLCHAIN_FILE": "D:/thridy_src/vcpkg/vcpkg/scripts/buildsystems/vcpkg.cmake",
 
-        "VCPKG_TARGET_TRIPLET": "x64-windows",
+        "VCPKG_TARGET_TRIPLET":"x64-windows-v142-tensorrt",
         "VCPKG_HOST_TRIPLET": "x64-windows",
 
         "VCPKG_INSTALLED_DIR": "${sourceDir}/vcpkg_installed",
         "VCPKG_OVERLAY_PORTS": "${sourceDir}/overlay-ports",
+        "VCPKG_OVERLAY_TRIPLETS":"${sourceDir}/triplets",
 
         "Qt5_DIR": "D:/QT/qt_online/5.15.2/msvc2019_64/lib/cmake/Qt5",
 

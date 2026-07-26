@@ -1,0 +1,12 @@
+diff --git a/absl/container/internal/raw_hash_map.h b/absl/container/internal/raw_hash_map.h
+index 9338f16..6e68557 100755
+--- a/absl/container/internal/raw_hash_map.h
++++ b/absl/container/internal/raw_hash_map.h
+@@ -45,6 +45,7 @@ struct InstantiateRawHashMap {
+ 
+ template <class Policy, class... Params>
+ class raw_hash_map : public raw_hash_set<Policy, Params...> {
++public:
+   // P is Policy. It's passed as a template argument to support maps that have
+   // incomplete types as values, as in unordered_map<K, IncompleteType>.
+   // MappedReference<> may be a non-reference type.

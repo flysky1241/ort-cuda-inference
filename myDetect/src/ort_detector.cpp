@@ -904,6 +904,7 @@ void ORTDetector::configureSessionOptions()
 }
 
 
+//
 void ORTDetector::appendCudaExecutionProvider()
 {
     const OrtApi& api = Ort::GetApi();

@@ -1,0 +1,22 @@
+diff --git a/src/google/protobuf/port.h b/src/google/protobuf/port.h
+index 1c4b73e..ce615ca 100755
+--- a/src/google/protobuf/port.h
++++ b/src/google/protobuf/port.h
+@@ -412,7 +412,7 @@ struct PrefetchOpts {
+ 
+   // The amount to prefetch, or the distance to prefetch from.
+   struct Amount {
+-#ifdef ABSL_REQUIRE_EXPLICIT_INIT
++#if defined(ABSL_REQUIRE_EXPLICIT_INIT) && !defined(__CUDACC__)
+     const size_t num ABSL_REQUIRE_EXPLICIT_INIT;
+     const Unit unit ABSL_REQUIRE_EXPLICIT_INIT;
+ #else
+@@ -469,7 +469,7 @@ struct PrefetchOpts {
+     }
+   };
+ 
+-#ifdef ABSL_REQUIRE_EXPLICIT_INIT
++#if defined(ABSL_REQUIRE_EXPLICIT_INIT) && !defined(__CUDACC__)
+   const Amount num ABSL_REQUIRE_EXPLICIT_INIT;
+ #else
+   const Amount num = {1, kLines};

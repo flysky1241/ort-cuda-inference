@@ -1,10 +1,13 @@
 {
   "name":"my-detect",
+
+  "builtin-baseline":"43643e1f5cf73db40d0d4bd610183348eb09b24e",
+
   "dependencies": [
     {
       "name":"onnxruntime",
       "default-features":false,
-      "features":["cuda"]
+      "features":["cuda","tensorrt"]
     }
   ]
 }
