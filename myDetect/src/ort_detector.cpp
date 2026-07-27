@@ -904,13 +904,16 @@ void ORTDetector::configureSessionOptions()
 }
 
 
-//
+//CUAD EP的挂载，动用 CUDA_V2, CUDA_V2的挂载是动用 纯C的API，而不是C++的，直接sessionOption.append这种。
 void ORTDetector::appendCudaExecutionProvider()
 {
+    //纯C的 函数表
     const OrtApi& api = Ort::GetApi();
 
+    //原生CUDAV2的 纯C指针
     OrtCUDAProviderOptionsV2* rawCudaOptions = nullptr;
 
+    //开始创建这个 sessionOption，可以这么理解这个是 纯C的玩法
     Ort::ThrowOnError(api.CreateCUDAProviderOptions(std::addressof(rawCudaOptions)));
 
     if(rawCudaOptions == nullptr)
@@ -918,6 +921,7 @@ void ORTDetector::appendCudaExecutionProvider()
         throw std::runtime_error("CreateCUDAProviderOptions returned nullptr");
     }
 
+    //因为是纯C指针 所以没有RAII机制，我们用智能指针
     auto cudaOptionDeleter = [&api](OrtCUDAProviderOptionsV2* options)
     {
         if(options != nullptr)
@@ -958,6 +962,7 @@ void ORTDetector::appendCudaExecutionProvider()
         throw std::runtime_error("CUDA provider option key/value size mismatch");
     }
 
+    //通过键值对 把option的一些cuda参数 加入进去，比如GPU设备id，内存池的扩张策略等，通过update来完成写入参数。
     Ort::ThrowOnError(api.UpdateCUDAProviderOptions(
         cudaOptions.get(),
         keys.data(),
@@ -965,6 +970,7 @@ void ORTDetector::appendCudaExecutionProvider()
         keys.size()
     ));
 
+    //最后就是挂载。
     Ort::ThrowOnError(api.SessionOptionsAppendExecutionProvider_CUDA_V2(
         static_cast<OrtSessionOptions*>(this->m_sessionOptions_),
         cudaOptions.get()
