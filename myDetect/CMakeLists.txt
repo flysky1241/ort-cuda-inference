@@ -52,7 +52,9 @@ add_executable (myDetect "src/main.cpp"
     include/algo/ort_gpu_runtime.h
     src/ort_gpu_runtime.cpp
     include/algo/ort_check_algo_cuda.h
-    src/ort_check_algo_cuda.cpp) 
+    src/ort_check_algo_cuda.cpp
+    include/algo/ort_detector_V2.h
+    src/ort_detector_V2.cpp) 
 
 target_link_libraries(myDetect
     Qt5::Widgets
