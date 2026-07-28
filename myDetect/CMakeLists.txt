@@ -20,6 +20,8 @@ find_package(OpenCV REQUIRED)
 
 find_package(onnxruntime CONFIG REQUIRED)
 
+find_package(CUDAToolkit 12.2 REQUIRED)
+
 get_target_property(
     ONNXRUNTIME_INCLUDE_DIRS
     onnxruntime::onnxruntime
@@ -46,12 +48,17 @@ add_executable (myDetect "src/main.cpp"
     include/algo/yolov8_detector.h
     src/yolov8_detector.cpp
     include/algo/ort_detector.h
-    src/ort_detector.cpp) 
+    src/ort_detector.cpp
+    include/algo/ort_gpu_runtime.h
+    src/ort_gpu_runtime.cpp
+    include/algo/ort_check_algo_cuda.h
+    src/ort_check_algo_cuda.cpp) 
 
 target_link_libraries(myDetect
     Qt5::Widgets
     ${OpenCV_LIBS}
     onnxruntime::onnxruntime
+    CUDA::cudart
 )
 
 
