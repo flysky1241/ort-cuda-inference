@@ -12,7 +12,6 @@ enum class OrtBackend: unsigned
 {
     CPU,
     CUDA,
-    TRT
 };
 
 class ORTDetector final: public InferenceInterface

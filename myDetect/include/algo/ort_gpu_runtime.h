@@ -133,6 +133,8 @@ public:
     OrtFixedShapeIoBindingRunner(const OrtFixedShapeIoBindingRunner& other) = delete;
     OrtFixedShapeIoBindingRunner& operator=(const OrtFixedShapeIoBindingRunner& other) = delete;
 
+    ~OrtFixedShapeIoBindingRunner() = default;
+
     const float* run(const float* input, std::size_t inputElements);
     void warmup(int runs);
 
