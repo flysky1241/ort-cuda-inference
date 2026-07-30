@@ -22,15 +22,28 @@ find_package(onnxruntime CONFIG REQUIRED)
 
 find_package(CUDAToolkit 12.2 REQUIRED)
 
+find_package(nlohmann_json CONFIG REQUIRED)
+
 get_target_property(
     ONNXRUNTIME_INCLUDE_DIRS
     onnxruntime::onnxruntime
     INTERFACE_INCLUDE_DIRECTORIES
 )
 
+get_target_property(
+    NLOHMANN_JSON_INCLUDE_DIRS
+    nlohmann_json::nlohmann_json
+    INTERFACE_INCLUDE_DIRECTORIES
+)
+
 message(
     STATUS
     "ONNX Runtime include dirs = ${ONNXRUNTIME_INCLUDE_DIRS}"
+)
+
+message(
+    STATUS
+    "nlohmann_json include dirs = ${NLOHMANN_JSON_INCLUDE_DIRS}"
 )
 
 message(STATUS "Qt5_DIR = ${Qt5_DIR}")
@@ -61,6 +74,7 @@ target_link_libraries(myDetect
     ${OpenCV_LIBS}
     onnxruntime::onnxruntime
     CUDA::cudart
+    nlohmann_json::nlohmann_json
 )
 
 

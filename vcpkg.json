@@ -8,6 +8,7 @@
       "name":"onnxruntime",
       "default-features":false,
       "features":["cuda","tensorrt"]
-    }
+    },
+    "nlohmann-json"
   ]
 }

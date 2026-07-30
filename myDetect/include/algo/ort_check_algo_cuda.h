@@ -2,6 +2,7 @@
 #define ORT_CHECK_ALGO_CUDA_H
 
 #include "driver_types.h"
+#include "onnxruntime_cxx_api.h"
 #include <cuda_runtime.h>
 #include <string>
 #include <vector>
@@ -16,6 +17,8 @@ std::string boolText(bool value);
 std::vector<const char*> Vstring2Char(std::vector<std::string>& other);
 
 const char* str2Char(const std::string&);
+
+static Ort::Env& globalOrtEnvironment();
 
 
 #endif

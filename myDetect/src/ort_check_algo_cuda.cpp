@@ -1,7 +1,14 @@
 #include "algo/ort_check_algo_cuda.h"
 #include "cuda_runtime_api.h"
+#include "onnxruntime_cxx_api.h"
 #include <sstream>
 #include <stdexcept>
+
+static Ort::Env& globalOrtEnvironment()
+{
+    static Ort::Env environment{ORT_LOGGING_LEVEL_ERROR, "myDetect"};
+    return environment;
+}
 
 void checkCuda(
     cudaError_t status, 

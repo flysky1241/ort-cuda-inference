@@ -1,3 +1,5 @@
+#include <cstdint>
+#include <filesystem>
 #include <memory>
 #include <onnxruntime_cxx_api.h>
 #include "algo/inference_interface.h"
@@ -43,7 +45,30 @@ private:
     };
 
 private:
+    void localClassNames(const std::filesystem::path& filePath);
+    void localModelMetaData();
+    void resolveDynamicOutputShape();
+
+    //对于不同EP的sessionOption的配置和挂载
+    void configureSessionOptions(const std::filesystem::path& modelPath);
+    void prepareTensorRtCacheLayout(const std::filesystem::path& modelPath);
+
+    void createCudaStream();
+    void destroyGpuResources() noexcept;
+    void createIoBindingRunner();
+
+    std::vector<Ort::Value> runStandard(const cv::Mat& inputBlob);
+
+    static bool hasDynamicDimension(const std::vector<int64_t>& shape);
     
+    static std::string makeModelFingerPrint(
+        const std::filesystem::path& modelPath,
+        const std::array<int64_t, 4>& inputShape,
+        bool fp16,
+        bool int8
+    );
+
+    static std::string sanitizePathComponent(std::string value);
 
 private:
     OrtBackend m_backend_;
