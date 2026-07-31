@@ -1,10 +1,11 @@
 #include "algo/ort_check_algo_cuda.h"
 #include "cuda_runtime_api.h"
 #include "onnxruntime_cxx_api.h"
+#include <ios>
 #include <sstream>
 #include <stdexcept>
 
-static Ort::Env& globalOrtEnvironment()
+Ort::Env& globalOrtEnvironment()
 {
     static Ort::Env environment{ORT_LOGGING_LEVEL_ERROR, "myDetect"};
     return environment;
@@ -61,7 +62,23 @@ const char* str2Char(const std::string& other)
     return value;
 }
 
+std::string shape2String(const std::vector<int64_t>& shape)
+{
+    std::ostringstream output(std::ios_base::out);
+    output<<"[";
 
+    for(const auto& index : shape)
+    {
+        if(index != shape.front())
+        {
+            output<<", ";
+        }
+        output<<index;
+    }
+
+    output<<"]";
+    return output.str();
+}
 
 
 

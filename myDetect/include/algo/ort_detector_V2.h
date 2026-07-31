@@ -26,7 +26,7 @@ public:
     ~ORTDetector_V2() override = default;
 
     void initConfig(InferenceSettings& settings) override;
-    void infer_frame(cv::Mat& frame, std::vector<ODResultBox>& boxes) override;
+    void infer_frame(cv::Mat& frame, std::vector<ODResultBox>& result_boxes) override;
 
     [[nodiscard]]
     OrtBackend backend() const noexcept;
@@ -35,7 +35,7 @@ public:
     bool isInitialized() const noexcept;
 
 private:
-    struct LetterBoxInfo
+    struct LetterboxInfo
     {
         float scale;
         int padLeft;
@@ -69,6 +69,27 @@ private:
     );
 
     static std::string sanitizePathComponent(std::string value);
+
+    cv::Mat preProcess(const cv::Mat& frame, LetterboxInfo& letterbox) const;
+
+    void postProcess(
+        const float* outputData,           //由Ort 加装的blob数据，类型是Ort::Value
+        const LetterboxInfo& letterbox,     //因为要解析所以要还原到原始的类型大小，而letterbox里面有padLeft 和 padTop以及 缩放系数
+        const cv::Size& originalImageSize,  //这个是 原生帧画面的大小
+        std::vector<ODResultBox>& result_box    //ODResultBox里面就是装好经过分数筛选和NMS去除重复值之后再加上还原之后的 框的大小以及相应的分数和类别名字
+    ) const;
+
+    std::vector<int> classAwareNms(
+        const std::vector<cv::Rect>& boxes,     //这个就是把 经过初步的不符合置信度分数的排除之后的 候选框
+        const std::vector<float>& scores,       //候选框对应的 分数
+        const std::vector<int>& classIds        //候选框对应的类别
+    ) const;
+
+    void drawDetectionResults(          
+        cv::Mat& frame, 
+        const std::vector<ODResultBox>& result_box, 
+        const bool showScore
+    );
 
 private:
     OrtBackend m_backend_;
