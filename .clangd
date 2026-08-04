@@ -1,0 +1,18 @@
+If:
+  PathMatch: '.*(\.(cu|cuh)|inference_interface.h)$'
+
+CompileFlags:
+  Remove:
+    - '-forward-unknown-to-host-compiler'
+    - '--forward-unknown-to-host-compiler'
+    - '-Xcompiler=*'
+    - '--generate-code=*'
+    - '-gencode=*'
+    - '--compiler-bindir=*'
+    - '-ccbin=*'
+    - '-x'
+
+  Add:
+    - '-xcuda'
+    - '--cuda-path=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.2'
+    - '--cuda-gpu-arch=sm_89'

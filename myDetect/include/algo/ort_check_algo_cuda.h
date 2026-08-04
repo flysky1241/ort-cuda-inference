@@ -18,7 +18,7 @@ std::vector<const char*> Vstring2Char(std::vector<std::string>& other);
 
 const char* str2Char(const std::string&);
 
-static Ort::Env& globalOrtEnvironment();
+Ort::Env& globalOrtEnvironment();
 
 std::string shape2String(const std::vector<int64_t>& shape);
 

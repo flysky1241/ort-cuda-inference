@@ -1,3 +1,6 @@
+#ifndef ORT_DETECTOR_V2_H
+#define ORT_DETECTOR_V2_H
+
 #include <cstdint>
 #include <filesystem>
 #include <memory>
@@ -23,7 +26,7 @@ public:
         OrtGpuRuntimeConfig gpuConfig = {}
     );
 
-    ~ORTDetector_V2() override = default;
+    ~ORTDetector_V2() override;
 
     void initConfig(InferenceSettings& settings) override;
     void infer_frame(cv::Mat& frame, std::vector<ODResultBox>& result_boxes) override;
@@ -74,6 +77,7 @@ private:
 
     void postProcess(
         const float* outputData,           //由Ort 加装的blob数据，类型是Ort::Value
+        const std::vector<int64_t>& outputShape,
         const LetterboxInfo& letterbox,     //因为要解析所以要还原到原始的类型大小，而letterbox里面有padLeft 和 padTop以及 缩放系数
         const cv::Size& originalImageSize,  //这个是 原生帧画面的大小
         std::vector<ODResultBox>& result_box    //ODResultBox里面就是装好经过分数筛选和NMS去除重复值之后再加上还原之后的 框的大小以及相应的分数和类别名字
@@ -103,7 +107,7 @@ private:
     Ort::AllocatorWithDefaultOptions m_allocator_;
 
     cudaStream_t m_stream_;
-    std::unique_ptr<OrtFixedShapeIoBindingRunner> m_ioRunner_;
+    std::unique_ptr<OrtFixedShapeIoBindingRunner> m_ioRunner_{nullptr};
     
     std::vector<std::string> m_inputNameStorage_;
     std::vector<std::string> m_outputNameStorage_;
@@ -124,3 +128,5 @@ private:
 
     std::mutex m_inferMutx_;
 };
+
+#endif

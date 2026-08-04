@@ -3,10 +3,11 @@
 #include <QThread>
 #include <exception>
 #include <iostream>
-#include "algo/ort_detector.h"
+//#include "algo/ort_detector.h"
 #include "algo/yolov5_detector.h"
 #include "algo/yolov8_detector.h"
 #include "onnxruntime_cxx_api.h"
+#include "algo/ort_detector_V2.h"
 
 ObjectDetectorThread::ObjectDetectorThread(InferenceSettings settings, QObject* parent)
 	:QObject(parent)
@@ -32,7 +33,7 @@ ObjectDetectorThread::ObjectDetectorThread(InferenceSettings settings, QObject* 
 	{
 		try
 		{
-			this->detector = std::make_shared<ORTDetector>(OrtBackend::CUDA);
+			this->detector = std::make_shared<ORTDetector_V2>(OrtBackend::TRT);
 			detector->initConfig(settings);
 			break;
 		}
@@ -79,6 +80,10 @@ void ObjectDetectorThread::do_work()
 		catch(Ort::Exception& excepted)
 		{
 			std::cerr<<excepted.what()<<'\n';
+		}
+		catch(std::exception& excepted)
+		{
+			std::cerr<<"std run failed:"<<excepted.what()<<'\n';
 		}
 	}
 	else if(path.endsWith(".mp4"))

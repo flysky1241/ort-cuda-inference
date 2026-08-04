@@ -1,4 +1,4 @@
-#include "ui/yolov5_detect_ui.h"
+#include "ui/yoloDetectview_ui.h"
 #include <QPixmap>
 #include <QHBoxLayout>
 #include <QVBoxLayout>

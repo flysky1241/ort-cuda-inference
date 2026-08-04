@@ -2,7 +2,6 @@
 # 项目特定的逻辑。
 #
 cmake_minimum_required (VERSION 3.20)
-project(myDetect LANGUAGES CXX)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -36,6 +35,10 @@ get_target_property(
     INTERFACE_INCLUDE_DIRECTORIES
 )
 
+message(STATUS
+    "CUDA compiler: ${CMAKE_CUDA_COMPILER}"
+)
+
 message(
     STATUS
     "ONNX Runtime include dirs = ${ONNXRUNTIME_INCLUDE_DIRS}"
@@ -55,7 +58,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 add_executable (myDetect "src/main.cpp" 
     "src/inference_settings.cpp" 
     "src/yolov5_detector.cpp"
-    "src/yolov5_detect_ui.cpp" "include/ui/yolov5_detect_ui.h"
+    "src/yoloDetectview_ui.cpp" "include/ui/yoloDetectview_ui.h"
     "src/object_detector_thread.cpp"
     "include/algo/object_detector_thread.h"
     include/algo/yolov8_detector.h
@@ -67,7 +70,17 @@ add_executable (myDetect "src/main.cpp"
     include/algo/ort_check_algo_cuda.h
     src/ort_check_algo_cuda.cpp
     include/algo/ort_detector_V2.h
-    src/ort_detector_V2.cpp) 
+    src/ort_detector_V2.cpp
+    include/algo/ort_detector_V3.h
+    src/ort_detector_V3.cpp
+    include/algo/yolo_gpu_pipeline_V3.h
+    src/yolo_gpu_pipeline_V3.cpp
+    include/algo/core/yolo_gpu_pipeline_V3_Devices.cuh
+    src/core/yolo_gpu_pipeline_V3_Devices.cu
+    include/algo/core/yolo_gpu_pipeline_V3_kernels.cuh
+    src/core/yolo_gpu_pipeline_V3_kernels.cu
+    include/algo/inference_interface.h
+    ) 
 
 target_link_libraries(myDetect
     Qt5::Widgets

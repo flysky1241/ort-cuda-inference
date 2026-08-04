@@ -55,7 +55,9 @@
 
         "Qt5_DIR": "D:/QT/qt_online/5.15.2/msvc2019_64/lib/cmake/Qt5",
 
-        "OpenCV_DIR": "D:/OpenCV_build/build/install/x64/vc16/lib"
+        "OpenCV_DIR": "D:/OpenCV_build/build/install/x64/vc16/lib",
+        "CMAKE_CUDA_ARCHITECTURES": "89",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
     },
 
@@ -69,7 +71,8 @@
       "binaryDir": "${sourceDir}/out/build/${presetName}",
 
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CUDA_ARCHITECTURES": "89"
       }
     }
   ],

@@ -13,6 +13,8 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
 
 OrtGpuEpConfigurator::OrtGpuEpConfigurator(
         Ort::SessionOptions& sessionOptions,
@@ -30,9 +32,9 @@ void OrtGpuEpConfigurator::requireProvider(const std::string& providerName)
 {
     std::vector<std::string> providers = Ort::GetAvailableProviders();
 
-    auto iter = std::find_if(providers.begin(), providers.end(),[&providerName](std::vector<std::string>::iterator iter)
+    auto iter = std::find_if(providers.begin(), providers.end(),[&providerName](std::string iter)
     {
-        if(*iter==providerName)
+        if(iter==providerName)
             return true;
         return false;
     });
@@ -201,7 +203,9 @@ void OrtGpuEpConfigurator::apendCuda(const OrtCudaEpConfig& config)
         decltype(deleter)
     > cudaOption(rawOptions, deleter);
 
-    std::vector<const char*> keys
+
+
+    std::vector<std::string> keysStorage
     {
         "device_id",
         "arena_extend_strategy",
@@ -212,16 +216,19 @@ void OrtGpuEpConfigurator::apendCuda(const OrtCudaEpConfig& config)
         "enable_cuda_graph"
     };
 
-    std::vector<const char*> values
+    std::vector<std::string> valuesStorage
     {
-        str2Char(std::to_string(config.deviceId)),
+        std::to_string(config.deviceId),
         "kNextPowerOfTwo",
         "EXHAUSTIVE",
         "1",
-        str2Char(boolText(config.useMaximumCudnnWorkspace)),
-        str2Char(boolText(config.useTf32)),
-        str2Char(boolText(config.enableCudaGraph))
+        boolText(config.useMaximumCudnnWorkspace),
+        boolText(config.useTf32),
+        boolText(config.enableCudaGraph)
     };
+
+    std::vector<const char*> keys = ::Vstring2Char(keysStorage);
+    std::vector<const char*> values = ::Vstring2Char(valuesStorage);
 
     if(keys.size()!=values.size())
     {
@@ -247,6 +254,149 @@ void OrtGpuEpConfigurator::apendCuda(const OrtCudaEpConfig& config)
     ));
 }
 
+
+CudaEventOwner::CudaEventOwner(unsigned flags)
+{
+    CUDA_CHECK(::cudaEventCreateWithFlags(
+        std::addressof(m_event), 
+        flags)
+    );
+}
+
+CudaEventOwner::CudaEventOwner(CudaEventOwner&& other) noexcept
+    :m_event(std::exchange(other.m_event, nullptr))
+{}
+
+
+CudaEventOwner& CudaEventOwner::operator=(CudaEventOwner&& other) noexcept
+{
+    if(this!=std::addressof(other))
+    {
+        this->reset();
+        m_event = std::exchange(other.m_event, nullptr);
+    }
+    return *this;
+}
+
+
+void CudaEventOwner::reset() noexcept
+{
+    if(m_event!=nullptr)
+    {
+        (void)cudaEventDestroy(m_event);
+        m_event = nullptr;
+    }
+}
+
+
+void CudaEventOwner::record(cudaStream_t stream) const
+{
+    if(m_event == nullptr || stream == nullptr)
+    {
+        throw std::runtime_error("CUDA event or stream is not init");
+    }
+    CUDA_CHECK(::cudaEventRecord(this->m_event, stream));
+}
+
+
+void CudaEventOwner::synchronize() const
+{
+    if(m_event==nullptr)
+    {
+        throw std::runtime_error("event should be init");
+    }
+
+    CUDA_CHECK(::cudaEventSynchronize(m_event));
+}
+
+
+float CudaEventOwner::elapsedMillisecondsSince(const CudaEventOwner& start) const
+{
+    if(start.m_event == nullptr)
+    {
+        throw std::runtime_error("CUDA event start event should init");
+    }
+
+    float milliseconds = 0.0f;
+    CUDA_CHECK(::cudaEventElapsedTime(
+        std::addressof(milliseconds),
+        start.m_event, 
+        this->m_event)
+    );
+    return milliseconds;
+}
+
+CudaStreamOwner::CudaStreamOwner(unsigned flags)
+{
+    this->create(flags);
+}
+
+CudaStreamOwner::CudaStreamOwner(CudaStreamOwner&& other) noexcept
+    :m_stream_(std::exchange(other.m_stream_, nullptr))
+{}
+
+void CudaStreamOwner::create(unsigned flags)
+{
+    if(this->m_stream_ != nullptr)
+    {
+        return;
+    }
+
+    CUDA_CHECK(::cudaStreamCreateWithFlags(
+        std::addressof(m_stream_),
+        flags
+    ));
+}
+
+
+CudaStreamOwner& CudaStreamOwner::operator=(CudaStreamOwner&& other) noexcept
+{
+    if(this==std::addressof(other))
+    {
+        return *this;
+    }
+
+    this->reset();
+    this->m_stream_ = std::exchange(other.m_stream_, nullptr);
+
+    return *this;
+}
+
+
+void CudaStreamOwner::synchronize() const
+{
+    if(this->m_stream_ == nullptr)
+    {
+        throw std::runtime_error("CUDA stream is not init");
+    }
+
+    CUDA_CHECK(::cudaStreamSynchronize(m_stream_));
+}
+
+
+void CudaStreamOwner::reset() noexcept
+{
+    if(m_stream_!=nullptr)
+    {
+        CUDA_CHECK(cudaStreamDestroy(m_stream_));
+        m_stream_ = nullptr;
+    }
+}
+
+    
+::cudaStream_t CudaStreamOwner::get() const noexcept
+{
+    return m_stream_;
+}
+
+CudaStreamOwner::operator bool() const noexcept
+{
+    if(m_stream_!=nullptr)
+        return true;   
+    return false;
+}
+
+
 void* CudaReusableBuffer::data() noexcept
 {
     return m_data;
@@ -262,13 +412,40 @@ std::size_t CudaReusableBuffer::sizeBytes() const noexcept
     return m_bytes;
 }
 
+CudaReusableBuffer::Kind CudaReusableBuffer::kind() const noexcept
+{
+    return m_kind;
+}
+
 CudaReusableBuffer::CudaReusableBuffer(Kind kind) noexcept
     :m_kind(kind)
 {}
 
+
 CudaReusableBuffer::~CudaReusableBuffer()
 {
     this->reset();
+}
+
+
+CudaReusableBuffer::CudaReusableBuffer(CudaReusableBuffer&& other) noexcept
+    :m_kind(std::move(other.m_kind)),
+    m_data(std::exchange(other.m_data, nullptr)),
+    m_bytes(std::exchange(other.m_bytes, 0))
+{}
+
+
+CudaReusableBuffer& CudaReusableBuffer::operator=(CudaReusableBuffer&& other) noexcept
+{
+    if(this!=std::addressof(other))
+    {
+        this->reset();
+
+        m_kind = std::move(other.m_kind);
+        m_data = std::exchange(other.m_data, nullptr);
+        m_bytes = std::exchange(other.m_bytes, 0);
+    }
+    return *this;
 }
 
 
@@ -439,6 +616,7 @@ const float* OrtFixedShapeIoBindingRunner::run(
     }
 
     const std::size_t inputBytes = inputElements_ * sizeof(float);
+    const std::size_t outputBytes = outputElements_*sizeof(float);
 
     std::memcpy(pinnedInput_.data(), input, inputBytes);
 
@@ -457,7 +635,7 @@ const float* OrtFixedShapeIoBindingRunner::run(
     CUDA_CHECK(cudaMemcpyAsync(
         pinnedOutput_.data(), 
         deviceOutput_.data(), 
-        inputBytes, 
+        outputBytes, 
         cudaMemcpyDeviceToHost,
         m_stream_
     ));
