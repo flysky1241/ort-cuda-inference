@@ -121,6 +121,12 @@ packages/
 core
 core.*
 
+# But keep the CUDA source directory
+!myDetect/include/algo/core
+!myDetect/include/algo/core/**
+
+!myDetect/src/core
+!myDetect/src/core/**
 
 # ==================================================
 # Ninja
