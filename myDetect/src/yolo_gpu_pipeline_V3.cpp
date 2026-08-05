@@ -1,5 +1,5 @@
 #include "algo/yolo_gpu_pipeline_V3.h"
-#include <__clang_cuda_runtime_wrapper.h>
+#include <stdexcept>
 
 double OrtV3StageTimings::gpuTotalMs() const noexcept
 {
@@ -12,5 +12,23 @@ double OrtV3StageTimings::gpuTotalMs() const noexcept
         downloadMs
     );
 }
+
+std::size_t YoloGpuPipeline_V3::elementCount(
+    const std::vector<std::int64_t>& shape)
+{
+    if(shape.empty())
+    {
+        throw std::runtime_error("Tensor shape must init");
+    }
+
+    std::size_t count = 1;
+
+    for(const int64_t& dimension: shape)
+    {
+        
+    }
+}
+
+
 
 

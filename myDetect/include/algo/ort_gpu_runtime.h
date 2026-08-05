@@ -85,7 +85,7 @@ private:
     cudaStream_t userStream_ = nullptr;
 };
 
-
+//v3对于 GPU的stream传送带的 RAII机制包装
 class CudaStreamOwner final
 {
 public:
