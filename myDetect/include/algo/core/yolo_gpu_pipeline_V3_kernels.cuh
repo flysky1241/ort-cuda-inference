@@ -1,0 +1,1 @@
+constexpr int kNmsThreads = 64;

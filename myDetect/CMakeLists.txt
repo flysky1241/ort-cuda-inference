@@ -80,6 +80,8 @@ add_executable (myDetect "src/main.cpp"
     include/algo/core/yolo_gpu_pipeline_V3_kernels.cuh
     src/core/yolo_gpu_pipeline_V3_kernels.cu
     include/algo/inference_interface.h
+    include/algo/core/yolo_gpu_pipeline_V3_Cubfun.h
+    src/core/yolo_gpu_pipeline_V3_Cubfun.cu
     ) 
 
 target_link_libraries(myDetect

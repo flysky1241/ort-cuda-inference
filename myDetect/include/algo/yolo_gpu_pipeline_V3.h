@@ -71,7 +71,7 @@ public:
         std::string outputName,
         std::vector<std::int64_t> outputShape,
         int classCount,
-        YoloGpuPipeline_V3 config
+        YoloGpuPipelineV3Config config
     );
 
     YoloGpuPipeline_V3(const YoloGpuPipeline_V3& other) = delete;
