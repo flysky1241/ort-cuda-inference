@@ -6,18 +6,6 @@
 #include <limits>
 #include <stdexcept>
 
-double OrtV3StageTimings::gpuTotalMs() const noexcept
-{
-    return static_cast<double>(
-        hostStageingMs + 
-        uploadMs +
-        preprocessMs +
-        inferenceMs +
-        gpuPostprocessMs +
-        downloadMs
-    );
-}
-
 std::size_t YoloGpuPipeline_V3::elementCount(
     const std::vector<std::int64_t>& shape)
 {
@@ -203,8 +191,6 @@ YoloGpuPipeline_V3::YoloGpuPipeline_V3(
     }
 
     
-
-
 }
 
 

@@ -52,7 +52,6 @@ message(
 message(STATUS "Qt5_DIR = ${Qt5_DIR}")
 message(STATUS "OpenCV_DIR = ${OpenCV_DIR}")
 
-include_directories(${OpenCV_INCLUDE_DIRS})
 
 # 将源代码添加到此项目的可执行文件。
 add_executable (myDetect "src/main.cpp" 
@@ -82,6 +81,8 @@ add_executable (myDetect "src/main.cpp"
     include/algo/inference_interface.h
     include/algo/core/yolo_gpu_pipeline_V3_Cubfun.h
     src/core/yolo_gpu_pipeline_V3_Cubfun.cu
+    include/algo/core/yolo_gpu_pipline_V3_config.h
+    src/core/yolo_gpu_pipline_V3_config.cu
     ) 
 
 target_link_libraries(myDetect
@@ -93,6 +94,17 @@ target_link_libraries(myDetect
 )
 
 
-target_include_directories(myDetect PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(myDetect 
+    PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${OpenCV_INCLUDE_DIRS}
+    ${ONNXRUNTIME_INCLUDE_DIRS}
+)
+
+set_target_properties(
+    myDetect
+    PROPERTIES
+    NO_SYSTEM_FROM_IMPORTED ON
+)
 
 # TODO: 如有需要，请添加测试并安装目标。

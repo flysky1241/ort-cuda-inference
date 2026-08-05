@@ -1,5 +1,5 @@
 If:
-  PathMatch: '.*(\.(cu|cuh)|inference_interface.h|yolo_gpu_pipeline_V3_Cubfun.h)$'
+  PathMatch: '.*(\.(cu|cuh)|inference_interface.h|yolo_gpu_pipeline_V3_Cubfun.h|yolo_gpu_pipline_V3_config.h)$'
 
 CompileFlags:
   Remove:
