@@ -4,7 +4,7 @@
 #include "algo/core/yolo_gpu_pipline_V3_config.h"
 #include <driver_types.h>
 
-namespace yolo_cuda {
+namespace yolo_cuda_cub {
 
 __host__
 void sortDetectionsDescending(

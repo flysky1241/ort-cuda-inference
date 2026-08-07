@@ -1,8 +1,13 @@
 #include "algo/yolo_gpu_pipeline_V3.h"
 #include "algo/core/yolo_gpu_pipeline_V3_kernels.cuh"
+#include "algo/core/yolo_gpu_pipeline_V3_Cubfun.h"
+#include "algo/core/yolo_gpu_pipline_V3_config.h"
 #include "algo/ort_gpu_runtime.h"
 #include "onnxruntime_cxx_api.h"
+#include "opencv2/core/hal/interface.h"
+#include <chrono>
 #include <cstdint>
+#include <cstring>
 #include <limits>
 #include <stdexcept>
 
@@ -190,8 +195,115 @@ YoloGpuPipeline_V3::YoloGpuPipeline_V3(
         );
     }
 
-    
+    yolo_cuda_cub::sortDetectionsDescending(
+        nullptr, 
+        sortTemporaryBytes_, 
+        m_scoresUnsorted_.dataAs<float>(), 
+        m_scoresSorted_.dataAs<float>(), 
+        m_detectionsUnSorted_.dataAs<GpuDetectionV3>(), 
+        m_detectionsSorted_.dataAs<GpuDetectionV3>(), 
+        candidates_, 
+        m_stream_
+    );
+
+    m_sortTemporaryStorage_.resize(sortTemporaryBytes_);
 }
+
+
+
+void YoloGpuPipeline_V3::stageHostFrame(const cv::Mat& frame)
+{
+    if(frame.empty())
+    {
+        throw std::invalid_argument(
+            "Input frame is empty"
+        );
+    }
+
+    if(frame.type()!=CV_8UC3)
+    {
+        throw std::invalid_argument(
+            "ORTDetector_V3 requires CV_8UC3 BGR"
+        );
+    }
+
+    const int sourceWidth = frame.cols;
+    const int sourceHeight = frame.rows;
+
+    const std::size_t stride = 
+        static_cast<std::size_t>(sourceWidth) * 3U;
+    const std::size_t totalBytes = 
+        static_cast<std::size_t>(sourceHeight) * stride;
+    
+
+    const auto begin = std::chrono::steady_clock::now();
+
+    if(sourceWidth != currentSourceWidth_ ||
+        sourceHeight != currentSourceHeight_)
+    {
+        m_hostRawBgr_.resize(totalBytes);
+        m_deviceRawBgr_.resize(totalBytes);
+
+        currentSourceHeight_ = sourceHeight;
+        currentSourceWidth_ = sourceWidth;
+    }
+
+    if(frame.isContinuous() && frame.step == stride)
+    {
+        std::memcpy(
+            m_hostRawBgr_.dataAs<std::uint8_t>(),
+            frame.ptr<std::uint8_t>(),
+            totalBytes
+        );
+    }
+    else
+    {
+        for(auto row = 0; row < sourceHeight; ++row)
+        {
+            std::memcpy(
+                m_hostRawBgr_.dataAs<std::uint8_t>() + 
+                static_cast<std::uint8_t>(row) * stride, 
+                frame.ptr<std::uint8_t>(row), 
+                stride
+            );
+        }
+    }
+
+    const auto end = std::chrono::steady_clock::now();
+    this->m_lastTimings_.hostStageingMs = 
+        std::chrono::duration<double, std::milli>(end-begin).count();
+
+}
+
+
+
+void YoloGpuPipeline_V3::launchPreprocess(const LetterboxTransformV3& transform)
+{
+    const dim3 block(kPreprocessBlockX, kPreprocessBlockY);
+    const dim3 gride(
+        static_cast<unsigned>((inputWidth_ + kPreprocessBlockX-1)/kPreprocessBlockX),
+        static_cast<unsigned>((inputHeight_ + kPreprocessBlockY-1)/kPreprocessBlockY)
+    );
+
+    yolo_cuda_kernel::launchPreprocessNchwKernel(
+        block,
+        gride,
+        m_stream_,
+        m_deviceRawBgr_.dataAs<std::uint8_t>(), 
+        transform.originalWidth, 
+        transform.originalHeight, 
+        transform.originalWidth * 3U, 
+        m_deviceInput_.dataAs<float>(), 
+        inputWidth_, 
+        inputHeight_, 
+        transform.scale, 
+        transform.padLeft, 
+        transform.padTop
+    );
+
+    yolo_cuda_kernel::checkKernelLaunch("launchPreprocessNchwKernel");
+}
+
 
 
 

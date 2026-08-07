@@ -2,7 +2,7 @@
 #include "cub/device/device_radix_sort.cuh"
 #include "algo/ort_check_algo_cuda.h"
 
-namespace yolo_cuda{
+namespace yolo_cuda_cub{
 
 
 __host__
@@ -35,9 +35,6 @@ void sortDetectionsDescending(
         32,
         stream
     ));
-
-
-
 }
 
 
