@@ -2,7 +2,9 @@
 #include "algo/core/yolo_gpu_pipeline_V3_kernels.cuh"
 #include "algo/core/yolo_gpu_pipeline_V3_Cubfun.h"
 #include "algo/core/yolo_gpu_pipline_V3_config.h"
+#include "algo/ort_check_algo_cuda.h"
 #include "algo/ort_gpu_runtime.h"
+#include "cuda_runtime_api.h"
 #include "onnxruntime_cxx_api.h"
 #include "opencv2/core/hal/interface.h"
 #include <chrono>
@@ -306,4 +308,72 @@ void YoloGpuPipeline_V3::launchPreprocess(const LetterboxTransformV3& transform)
 
 
 
+[[nodiscard]]
+std::vector<GpuDetectionV3> YoloGpuPipeline_V3::run(
+    const cv::Mat& bgrFrame,
+    const LetterboxTransformV3& transform)
+{
+    if(transform.originalWidth != bgrFrame.cols || 
+        transform.originalWidth != bgrFrame.rows ||
+        transform.scale <= 0.0f)
+    {
+        throw std::runtime_error(
+            "LetterboxTransformV3 does not match the input frame"
+        );
+    }
 
+    this->stageHostFrame(bgrFrame);
+
+    const std::size_t rawBytes = 
+        static_cast<std::size_t>(bgrFrame.cols) *
+        static_cast<std::size_t>(bgrFrame.rows) * 3U;
+    
+    m_stageStart_.record(m_stream_);
+
+    CUDA_CHECK(::cudaMemcpyAsync(
+        m_deviceRawBgr_.dataAs<std::uint8_t>(), 
+        m_hostRawBgr_.dataAs<std::uint8_t>(), 
+        rawBytes, 
+        cudaMemcpyKind::cudaMemcpyHostToDevice,
+        m_stream_
+    ));
+
+    m_uploadEnd_.record(m_stream_);
+
+    this->launchPreprocess(transform);
+
+    m_preprocessEnd_.record(m_stream_);
+
+    m_session_.Run(m_runOptions_, m_bind_);
+
+    m_inferenceEnd_.record(m_stream_);
+
+    
+
+
+
+}
+
+
+
+void YoloGpuPipeline_V3::launchPostprocess(const LetterboxTransformV3& transform)
+{
+    const int decodeBlocks = 
+        (candidates_ + kDecodeThreads -1)/kDecodeThreads;
+    
+    yolo_cuda_kernel::launchPostDecodeYoloKernel(
+        decodeBlocks, 
+        m_stream_, 
+        m_deviceOutput_.dataAs<float>(), 
+        attributes_, 
+        candidates_,
+        classCount_, 
+        transform, 
+        m_config_.scoreThreshold, 
+        m_scoresUnsorted_.dataAs<float>(), 
+        m_detectionsUnSorted_.dataAs<GpuDetectionV3>()
+    );
+
+    yolo_cuda_kernel::checkKernelLaunch("launchPostDecodeYoloKernel");
+
+}

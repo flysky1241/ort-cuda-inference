@@ -1,12 +1,14 @@
 #ifndef YOLO_GPU_PIPELINE_V3_KERNEL_H
 #define YOLO_GPU_PIPELINE_V3_KERNEL_H
 
+#include "algo/core/yolo_gpu_pipline_V3_config.h"
 #include <cuda_runtime_api.h>
 #include <driver_types.h>
 #include <stdexcept>
 constexpr int kNmsThreads = 64;
 constexpr int kPreprocessBlockX = 16;
 constexpr int kPreprocessBlockY = 16;
+constexpr int kDecodeThreads = 256;
 
 
 namespace yolo_cuda_kernel {
@@ -40,6 +42,35 @@ __host__ void launchPreprocessNchwKernel(
     int padLeft,
     int padTop
 );
+
+
+__global__ void postDecodeYoloKernel(
+    const float* output,
+    int attributes,
+    int candidates,
+    int classCount,
+    LetterboxTransformV3 transform,
+    float scoreThreshold,
+    float* scores,
+    GpuDetectionV3* detections
+);
+
+
+__host__ void launchPostDecodeYoloKernel(
+    const int decodeBlock,
+    ::cudaStream_t stream,
+    const float* output,
+    int attributes,
+    int candidates,
+    int classCount,
+    LetterboxTransformV3 transform,
+    float scoreThreshold,
+    float* scores,
+    GpuDetectionV3* detections
+);
+
+
+
 
 
 __host__ inline 
