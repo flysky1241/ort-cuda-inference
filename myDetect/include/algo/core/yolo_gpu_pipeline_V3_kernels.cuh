@@ -2,6 +2,7 @@
 #define YOLO_GPU_PIPELINE_V3_KERNEL_H
 
 #include "algo/core/yolo_gpu_pipline_V3_config.h"
+#include <cstdint>
 #include <cuda_runtime_api.h>
 #include <driver_types.h>
 #include <stdexcept>
@@ -49,6 +50,7 @@ __global__ void postDecodeYoloKernel(
     int attributes,
     int candidates,
     int classCount,
+    bool attributesFirst,
     LetterboxTransformV3 transform,
     float scoreThreshold,
     float* scores,
@@ -63,6 +65,7 @@ __host__ void launchPostDecodeYoloKernel(
     int attributes,
     int candidates,
     int classCount,
+    bool attributesFirst,
     LetterboxTransformV3 transform,
     float scoreThreshold,
     float* scores,
@@ -70,7 +73,27 @@ __host__ void launchPostDecodeYoloKernel(
 );
 
 
+__global__ void buildClassAwareNmsMaskKernel(
+    GpuDetectionV3* sortedDetections,
+    int topK,
+    int columnBlocks,
+    float scoreThreshold,
+    float nmsThreshold,
+    std::uint8_t* mask
+);
 
+
+__host__ void launchBuildClassAwareNmsMaskKernel(
+    const dim3 nmsBlock,
+    const dim3 nmsGride,
+    ::cudaStream_t stream,
+    GpuDetectionV3* sortedDetections,
+    int topK,
+    int columnBlocks,
+    float scoreThreshold,
+    float nmsThreshold,
+    std::uint8_t* mask
+);
 
 
 __host__ inline 

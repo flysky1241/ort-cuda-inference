@@ -1,6 +1,9 @@
 #include <__clang_cuda_builtin_vars.h>
+#include <cmath>
+#include <math_constants.h>
 #include "algo/core/yolo_gpu_pipeline_V3_Devices.cuh"
 #include "algo/core/yolo_gpu_pipeline_V3_kernels.cuh"
+#include "algo/core/yolo_gpu_pipline_V3_config.h"
 
 namespace yolo_cuda_kernel{
 
@@ -127,6 +130,7 @@ __global__ void postDecodeYoloKernel(
     int attributes,
     int candidates,
     int classCount,
+    bool attributesFirst,
     LetterboxTransformV3 transform,
     float scoreThreshold,
     float* scores,
@@ -140,10 +144,101 @@ __global__ void postDecodeYoloKernel(
         return;
     }
 
+    float bestScore = -CUDART_INF_F;
+    int bestClassId = -1;
+
+    for(int classId = 0; classId < classCount; ++classId)
+    {
+        float score = yolo_cuda_device::readModelOutput(
+            output, 
+            4+classId, 
+            candidate, 
+            attributes, 
+            candidates, 
+            attributesFirst
+        );
+
+        if(score > bestScore)
+        {
+            bestScore  = score;
+            bestClassId = classId;
+        }
+    }
+
+    GpuDetectionV3 detection{};
+    detection.score = -CUDART_INF_F;
+    detection.classId = -1;
+
+    if(bestScore >= scoreThreshold)
+    {
+        const float centerX = yolo_cuda_device::readModelOutput(
+            output, 0, candidate, attributes, candidates, attributesFirst);
+            
+        const float centerY = yolo_cuda_device::readModelOutput(
+            output, 1, candidate, attributes, candidates, attributesFirst);
+
+        const float width = yolo_cuda_device::readModelOutput(
+            output, 2, candidate, attributes, candidates, attributesFirst);
+
+        const float height = yolo_cuda_device::readModelOutput(
+            output, 3, candidate, attributes, candidates, attributesFirst);
     
+        if(isfinite(centerX) && isfinite(centerY) &&
+           isfinite(width) && isfinite(height) && 
+           width>0.0f && height>0.0f &&
+           transform.scale>0.0f)
+        {
+            float x1 = (centerX - width * 0.5f - 
+                static_cast<float>(transform.padLeft)) / transform.scale; 
 
+            float y1 = (centerY - height * 0.5f -
+                static_cast<float>(transform.padTop)) / transform.scale;
 
+            float x2 = (centerX + width * 0.5f -
+                static_cast<float>(transform.padLeft)) / transform.scale;
 
+            float y2 = (centerY + width * 0.5f -
+                static_cast<float>(transform.padTop)) / transform.scale;
+            
+                
+            x1 = yolo_cuda_device::clampFloat(
+                x1, 
+                0.0f, 
+                static_cast<float>(transform.originalWidth)
+            );
+
+            y1 = yolo_cuda_device::clampFloat(
+                y1, 
+                0.0f, 
+                static_cast<float>(transform.originalHeight)
+            );
+
+            x2 = yolo_cuda_device::clampFloat(
+                x2, 
+                0.0f, 
+                static_cast<float>(transform.originalWidth)
+            );
+
+            y2 = yolo_cuda_device::clampFloat(
+                y2, 
+                0.0f, 
+                static_cast<float>(transform.originalHeight)
+            );
+
+            if(x1<x2 && y1<y2)
+            {
+                detection.x1 = x1;
+                detection.y1 = y1;
+                detection.x2 = x2;
+                detection.y2 = y2;
+                detection.classId = bestClassId;
+                detection.score = bestScore;
+            }
+        }
+    }
+
+    scores[candidate] = detection.score;
+    detections[candidate] = detection;
 }
 
 
@@ -155,6 +250,7 @@ __host__ void launchPostDecodeYoloKernel(
     int attributes,
     int candidates,
     int classCount,
+    bool attributesFirst,
     LetterboxTransformV3 transform,
     float scoreThreshold,
     float* scores,
@@ -165,6 +261,7 @@ __host__ void launchPostDecodeYoloKernel(
         attributes,
         candidates,
         classCount,
+        attributesFirst,
         transform,
         scoreThreshold,
         scores,
@@ -172,6 +269,74 @@ __host__ void launchPostDecodeYoloKernel(
     );
 }
 
+__global__ void buildClassAwareNmsMaskKernel(
+    GpuDetectionV3* sortedDetections,
+    int topK,
+    int columnBlocks,
+    float scoreThreshold,
+    float nmsThreshold,
+    std::uint8_t* masks)
+{
+    const int row = static_cast<int>(blockIdx.y * blockDim.x + threadIdx.x);
+    const int columnBlock = static_cast<int>(blockDim.x);
 
+    if(row >= topK)
+    {
+        return;
+    }
+    
+    const int columnStart = columnBlock * kNmsThreads;
+    const int columnEnd = min(columnStart + kNmsThreads, topK);
+    const GpuDetectionV3 current = sortedDetections[row];
+
+    uint64_t mask = 0;
+
+    if(current.score >= scoreThreshold && current.classId >=0)
+    {
+        for(int column = columnStart; column<columnEnd; ++column)
+        {
+            if(column<=row)
+            {
+                continue;
+            }
+
+            GpuDetectionV3 other = sortedDetections[column];
+
+            if(other.score < scoreThreshold || other.classId != current.classId)
+            {
+                continue;
+            }
+
+            
+
+        }
+    }
+
+
+
+
+}
+
+
+__host__ void launchBuildClassAwareNmsMaskKernel(
+    const dim3 nmsBlock,
+    const dim3 nmsGride,
+    ::cudaStream_t stream,
+    GpuDetectionV3* sortedDetections,
+    int topK,
+    int columnBlocks,
+    float scoreThreshold,
+    float nmsThreshold,
+    std::uint8_t* masks)
+{
+    yolo_cuda_kernel::buildClassAwareNmsMaskKernel<<<nmsGride, nmsBlock, 0, stream>>>(
+        sortedDetections, 
+        topK, 
+        columnBlocks, 
+        scoreThreshold, 
+        nmsThreshold, 
+        masks
+    );
+}
 
 };

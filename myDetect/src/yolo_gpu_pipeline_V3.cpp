@@ -348,7 +348,9 @@ std::vector<GpuDetectionV3> YoloGpuPipeline_V3::run(
 
     m_inferenceEnd_.record(m_stream_);
 
-    
+    this->launchPostprocess(transform);
+
+    m_postprocessEnd_.record(m_stream_);
 
 
 
@@ -368,6 +370,7 @@ void YoloGpuPipeline_V3::launchPostprocess(const LetterboxTransformV3& transform
         attributes_, 
         candidates_,
         classCount_, 
+        attributesFirst_,
         transform, 
         m_config_.scoreThreshold, 
         m_scoresUnsorted_.dataAs<float>(), 
@@ -376,4 +379,34 @@ void YoloGpuPipeline_V3::launchPostprocess(const LetterboxTransformV3& transform
 
     yolo_cuda_kernel::checkKernelLaunch("launchPostDecodeYoloKernel");
 
+    yolo_cuda_cub::sortDetectionsDescending(
+        m_sortTemporaryStorage_.data(), 
+        sortTemporaryBytes_, 
+        m_scoresUnsorted_.dataAs<float>(), 
+        m_scoresSorted_.dataAs<float>(), 
+        m_detectionsUnSorted_.dataAs<GpuDetectionV3>(), 
+        m_detectionsSorted_.dataAs<GpuDetectionV3>(), 
+        candidates_, 
+        m_stream_
+    );
+
+    const dim3 nmsBlock(kNmsThreads);
+    const dim3 grides(
+        static_cast<unsigned>(nmsColumBlocks_), 
+        static_cast<unsigned>((nmsTopK_+kNmsThreads-1)/kNmsThreads)
+    );
+
+    yolo_cuda_kernel::launchBuildClassAwareNmsMaskKernel(
+        nmsBlock, 
+        grides, 
+        m_stream_, 
+        m_detectionsSorted_.dataAs<GpuDetectionV3>(), 
+        nmsTopK_, 
+        nmsColumBlocks_, 
+        m_config_.scoreThreshold, 
+        m_config_.nmsThrehold, 
+        m_nmsMasks_.dataAs<std::uint8_t>()
+    );
+
+    yolo_cuda_kernel::checkKernelLaunch("launchBuildClassAwareNmsMaskKernel");
 }

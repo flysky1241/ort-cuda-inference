@@ -15,10 +15,10 @@ struct LetterboxTransformV3
 
 struct GpuDetectionV3
 {
-    float x1 = 0.0f;
+    float x1 = 0.0f;    //原来是CPU 所以使用 cv::Rect 就是左上角点 + 宽高
     float y1 = 0.0f;
     float x2 = 0.0f;
-    float y2 = 0.0f;
+    float y2 = 0.0f;    //这个是右下角点
     float score = 0.0f;
     std::int32_t classId = -1;
 };
