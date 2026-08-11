@@ -1,5 +1,6 @@
 #include <__clang_cuda_builtin_vars.h>
 #include <cmath>
+#include <cstdint>
 #include <math_constants.h>
 #include "algo/core/yolo_gpu_pipeline_V3_Devices.cuh"
 #include "algo/core/yolo_gpu_pipeline_V3_kernels.cuh"
@@ -275,10 +276,10 @@ __global__ void buildClassAwareNmsMaskKernel(
     int columnBlocks,
     float scoreThreshold,
     float nmsThreshold,
-    std::uint8_t* masks)
+    uint64_t* masks)
 {
     const int row = static_cast<int>(blockIdx.y * blockDim.x + threadIdx.x);
-    const int columnBlock = static_cast<int>(blockDim.x);
+    const int columnBlock = static_cast<int>(blockIdx.x);
 
     if(row >= topK)
     {
@@ -307,14 +308,14 @@ __global__ void buildClassAwareNmsMaskKernel(
                 continue;
             }
 
-            
-
+            if(yolo_cuda_device::intersectionOverUnion(current, other)>nmsThreshold)
+            {
+                mask |= uint64_t{1}<<(column-columnStart);
+            }
         }
     }
 
-
-
-
+    masks[row * columnBlocks + columnBlock] = mask;
 }
 
 
@@ -327,7 +328,7 @@ __host__ void launchBuildClassAwareNmsMaskKernel(
     int columnBlocks,
     float scoreThreshold,
     float nmsThreshold,
-    std::uint8_t* masks)
+    std::uint64_t* masks)
 {
     yolo_cuda_kernel::buildClassAwareNmsMaskKernel<<<nmsGride, nmsBlock, 0, stream>>>(
         sortedDetections, 
@@ -338,5 +339,51 @@ __host__ void launchBuildClassAwareNmsMaskKernel(
         masks
     );
 }
+
+__global__ void SelectNmsResultKernel(
+    GpuDetectionV3* destionSort,
+    std::uint64_t* masks,
+    int topK,
+    int columnBlock,
+    float scoreThreshold,
+    int maxDetections,
+    std::uint64_t* nmsRemoved,
+    GpuDetectionV3* finalDetection,
+    int* finalCount)
+{
+    
+
+
+
+
+}
+
+
+__host__ void launchSelectNmsResultKernel(
+    cudaStream_t stream,
+    GpuDetectionV3* destionSort,
+    std::uint64_t* masks,
+    int topK,
+    int columnBlock,
+    float scoreThreshold,
+    int maxDetections,
+    std::uint64_t* nmsRemoved,
+    GpuDetectionV3* finalDetection,
+    int* finalCount)
+{
+    yolo_cuda_kernel::SelectNmsResultKernel<<<1, 1, 0, stream>>>(
+        destionSort, 
+        masks,
+        topK, 
+        columnBlock, 
+        scoreThreshold, 
+        maxDetections, 
+        nmsRemoved, 
+        finalDetection, 
+        finalCount
+    );
+}
+
+
 
 };

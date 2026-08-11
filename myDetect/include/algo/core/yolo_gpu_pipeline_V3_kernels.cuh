@@ -79,7 +79,7 @@ __global__ void buildClassAwareNmsMaskKernel(
     int columnBlocks,
     float scoreThreshold,
     float nmsThreshold,
-    std::uint8_t* mask
+    uint64_t* mask
 );
 
 
@@ -92,11 +92,39 @@ __host__ void launchBuildClassAwareNmsMaskKernel(
     int columnBlocks,
     float scoreThreshold,
     float nmsThreshold,
-    std::uint8_t* mask
+    std::uint64_t* mask
 );
 
 
-__host__ inline 
+__global__ void SelectNmsResultKernel(
+    GpuDetectionV3* destionSort,
+    std::uint64_t* masks,
+    int topK,
+    int columnBlock,
+    float scoreThreshold,
+    int maxDetections,
+    std::uint64_t* nmsRemoved,
+    GpuDetectionV3* finalDetection,
+    int* finalCount
+);
+
+
+__host__ void launchSelectNmsResultKernel(
+    ::cudaStream_t stream,
+    GpuDetectionV3* destionSort,
+    std::uint64_t* masks,
+    int topK,
+    int columnBlock,
+    float scoreThreshold,
+    int maxDetections,
+    std::uint64_t* nmsRemoved,
+    GpuDetectionV3* finalDetection,
+    int* finalCount
+);
+
+
+
+__host__ __forceinline__ 
 void checkKernelLaunch(const char* name)
 {
     cudaError_t cu_error = ::cudaGetLastError();

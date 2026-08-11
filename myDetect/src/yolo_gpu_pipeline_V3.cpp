@@ -5,6 +5,7 @@
 #include "algo/ort_check_algo_cuda.h"
 #include "algo/ort_gpu_runtime.h"
 #include "cuda_runtime_api.h"
+#include "driver_types.h"
 #include "onnxruntime_cxx_api.h"
 #include "opencv2/core/hal/interface.h"
 #include <chrono>
@@ -405,8 +406,23 @@ void YoloGpuPipeline_V3::launchPostprocess(const LetterboxTransformV3& transform
         nmsColumBlocks_, 
         m_config_.scoreThreshold, 
         m_config_.nmsThrehold, 
-        m_nmsMasks_.dataAs<std::uint8_t>()
+        m_nmsMasks_.dataAs<std::uint64_t>()
     );
 
     yolo_cuda_kernel::checkKernelLaunch("launchBuildClassAwareNmsMaskKernel");
+
+    yolo_cuda_kernel::launchSelectNmsResultKernel(
+        m_stream_,
+        m_detectionsSorted_.dataAs<GpuDetectionV3>(),
+        m_nmsMasks_.dataAs<std::uint64_t>(), 
+        nmsTopK_, 
+        nmsColumBlocks_, 
+        m_config_.scoreThreshold, 
+        m_config_.maxDetections, 
+        m_nmsRemoved_.dataAs<std::uint64_t>(), 
+        m_finalDetections_.dataAs<GpuDetectionV3>(), 
+        m_finalCount_.dataAs<int>()
+    );
+
+    yolo_cuda_kernel::checkKernelLaunch("launchSelectNmsResultKernel");
 }

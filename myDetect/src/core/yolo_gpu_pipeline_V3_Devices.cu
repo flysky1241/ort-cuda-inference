@@ -1,4 +1,5 @@
 #include "algo/core/yolo_gpu_pipeline_V3_Devices.cuh"
+#include <cmath>
 
 namespace yolo_cuda_device {
     
@@ -22,9 +23,22 @@ __device__ float readModelOutput(
 
 __device__ float intersectionOverUnion(const GpuDetectionV3& left, const GpuDetectionV3& right)
 {
-    
+    const float intersectionLeft = fmaxf(left.x1, right.x1);
+    const float intersectionTop = fmaxf(left.y1, right.y1);
+    const float intersectionRight = fminf(left.x2, right.x2);
+    const float intersectionBottom = fminf(left.y2, right.y2);
 
+    const float intersectionWidth = fmaxf(0.0f, intersectionRight-intersectionLeft);
+    const float intersectionHeight = fmaxf(0.0f, intersectionBottom-intersectionTop);
 
+    const float intersectionArea = intersectionWidth * intersectionHeight;
+
+    const float leftArea = fmaxf(0.0f, left.x2-left.x1) * fmaxf(0.0f, left.y2-left.y1);
+    const float RightArea = fmaxf(0.0f, right.x2-right.x1) * fmaxf(0.0f, right.y2-right.y1);
+
+    const float UnionArea = leftArea + RightArea - intersectionArea;
+ 
+    return UnionArea >0.0f ? intersectionArea/UnionArea : 0.0f;
 }
 
 
