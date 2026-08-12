@@ -75,7 +75,6 @@ add_executable (myDetect "src/main.cpp"
     include/algo/yolo_gpu_pipeline_V3.h
     src/yolo_gpu_pipeline_V3.cpp
     include/algo/core/yolo_gpu_pipeline_V3_Devices.cuh
-    src/core/yolo_gpu_pipeline_V3_Devices.cu
     include/algo/core/yolo_gpu_pipeline_V3_kernels.cuh
     src/core/yolo_gpu_pipeline_V3_kernels.cu
     include/algo/inference_interface.h

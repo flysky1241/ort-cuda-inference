@@ -1,5 +1,3 @@
-#include <__clang_cuda_builtin_vars.h>
-#include <cmath>
 #include <cstdint>
 #include <math_constants.h>
 #include "algo/core/yolo_gpu_pipeline_V3_Devices.cuh"
@@ -350,12 +348,51 @@ __global__ void SelectNmsResultKernel(
     std::uint64_t* nmsRemoved,
     GpuDetectionV3* finalDetection,
     int* finalCount)
-{
-    
+{   
+    if(blockIdx.x !=0 || threadIdx.x!=0)
+    {
+        return;
+    }
 
+    for(auto index=0; index<columnBlock; ++index)
+    {
+        nmsRemoved[index]=0;
+    }
 
+    int kept = 0;
 
+    for(int row = 0; row < topK; ++row)
+    {
+        const GpuDetectionV3 current = destionSort[row];
 
+        if(current.score < scoreThreshold || current.classId<0)
+        {
+            break;
+        }
+
+        const int block = row / kNmsThreads;
+        const int bit = row % kNmsThreads;
+
+        if((nmsRemoved[block] & (uint64_t{1}<<bit)) !=0)
+        {
+            continue;
+        }
+
+        if(kept > maxDetections)
+        {
+            break;
+        }
+
+        finalDetection[kept++] = current;
+
+        const uint64_t* rowMask = masks + row * columnBlock;
+        for(auto indexBlock = block; indexBlock<columnBlock; ++indexBlock)
+        {
+            nmsRemoved[indexBlock] |= rowMask[indexBlock];
+        }
+    }
+
+    *finalCount = kept;
 }
 
 

@@ -263,6 +263,11 @@ CudaEventOwner::CudaEventOwner(unsigned flags)
     );
 }
 
+CudaEventOwner::~CudaEventOwner() noexcept
+{
+    CUDA_CHECK(::cudaEventDestroy(m_event));
+}
+
 CudaEventOwner::CudaEventOwner(CudaEventOwner&& other) noexcept
     :m_event(std::exchange(other.m_event, nullptr))
 {}

@@ -8,6 +8,8 @@
 #include "driver_types.h"
 #include "onnxruntime_cxx_api.h"
 #include "opencv2/core/hal/interface.h"
+#include "opencv2/core/types.hpp"
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <cstring>
@@ -353,8 +355,26 @@ std::vector<GpuDetectionV3> YoloGpuPipeline_V3::run(
 
     m_postprocessEnd_.record(m_stream_);
 
+    copyCompactResults2Host();
+    m_downloadEnd_.record(m_stream_);
+    m_downloadEnd_.synchronize();
 
+    m_lastTimings_.uploadMs = m_uploadEnd_.elapsedMillisecondsSince(m_stageStart_);
+    m_lastTimings_.preprocessMs = m_preprocessEnd_.elapsedMillisecondsSince(m_uploadEnd_);
+    m_lastTimings_.inferenceMs = m_inferenceEnd_.elapsedMillisecondsSince(m_preprocessEnd_);
+    m_lastTimings_.gpuPostprocessMs = m_postprocessEnd_.elapsedMillisecondsSince(m_inferenceEnd_);
+    m_lastTimings_.downloadMs = m_downloadEnd_.elapsedMillisecondsSince(m_postprocessEnd_);
 
+    const int count = std::clamp(
+        m_hostFinalCount_.dataAs<int>()[0], 
+        0, 
+        m_config_.maxDetections
+    );
+
+    return std::vector<GpuDetectionV3>(
+        m_hostFinalDetections_.dataAs<GpuDetectionV3>(),
+        m_hostFinalDetections_.dataAs<GpuDetectionV3>()+count
+    );
 }
 
 
@@ -425,4 +445,55 @@ void YoloGpuPipeline_V3::launchPostprocess(const LetterboxTransformV3& transform
     );
 
     yolo_cuda_kernel::checkKernelLaunch("launchSelectNmsResultKernel");
+}
+
+
+void YoloGpuPipeline_V3::copyCompactResults2Host()
+{
+    CUDA_CHECK(::cudaMemcpyAsync(
+        m_hostFinalCount_.dataAs<int>(), 
+        m_finalCount_.dataAs<int>(), 
+        sizeof(int), 
+        cudaMemcpyKind::cudaMemcpyDeviceToHost,
+        m_stream_
+    ));
+
+    CUDA_CHECK(::cudaMemcpyAsync(
+        m_hostFinalDetections_.dataAs<GpuDetectionV3>(), 
+        m_finalDetections_.dataAs<GpuDetectionV3>(), 
+        m_hostFinalDetections_.sizeBytes(), 
+        cudaMemcpyKind::cudaMemcpyDeviceToHost,
+        m_stream_
+    ));
+}
+
+
+void YoloGpuPipeline_V3::warmup()
+{
+    if(m_config_.warmupRuns<0)
+    {
+        return ;
+    }
+
+    cv::Mat dummy(
+        inputHeight_,
+        inputWidth_,
+        CV_8UC3,
+        cv::Scalar(0, 0, 0)
+    );
+
+    LetterboxTransformV3 tranform;
+    tranform.scale = 1.0f;
+    tranform.originalHeight = inputHeight_;
+    tranform.originalWidth = inputWidth_;
+
+    for(auto index=0; index<m_config_.warmupRuns; ++index)
+    {
+        (void)this->run(dummy, tranform);
+    }
+}
+
+const OrtV3StageTimings& YoloGpuPipeline_V3::lastTimings() const noexcept
+{
+    return m_lastTimings_;
 }
