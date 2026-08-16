@@ -340,6 +340,15 @@ CudaStreamOwner::CudaStreamOwner(CudaStreamOwner&& other) noexcept
     :m_stream_(std::exchange(other.m_stream_, nullptr))
 {}
 
+CudaStreamOwner::~CudaStreamOwner() noexcept
+{
+    if(m_stream_!=nullptr)
+    {
+        CUDA_CHECK(::cudaStreamDestroy(m_stream_));
+        m_stream_=nullptr;
+    }
+}
+
 void CudaStreamOwner::create(unsigned flags)
 {
     if(this->m_stream_ != nullptr)
