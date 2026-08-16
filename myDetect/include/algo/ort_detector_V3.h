@@ -30,6 +30,8 @@ public:
     [[nodiscard]]
     bool isInitialized() const noexcept;
 
+
+private:
     
 
 
