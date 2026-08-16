@@ -317,7 +317,7 @@ std::vector<GpuDetectionV3> YoloGpuPipeline_V3::run(
     const LetterboxTransformV3& transform)
 {
     if(transform.originalWidth != bgrFrame.cols || 
-        transform.originalWidth != bgrFrame.rows ||
+        transform.originalHeight != bgrFrame.rows ||
         transform.scale <= 0.0f)
     {
         throw std::runtime_error(

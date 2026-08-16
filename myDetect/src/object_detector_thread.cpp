@@ -3,11 +3,10 @@
 #include <QThread>
 #include <exception>
 #include <iostream>
-//#include "algo/ort_detector.h"
 #include "algo/yolov5_detector.h"
 #include "algo/yolov8_detector.h"
 #include "onnxruntime_cxx_api.h"
-#include "algo/ort_detector_V2.h"
+#include "algo/ort_detector_V3.h"
 
 ObjectDetectorThread::ObjectDetectorThread(InferenceSettings settings, QObject* parent)
 	:QObject(parent)
@@ -33,7 +32,20 @@ ObjectDetectorThread::ObjectDetectorThread(InferenceSettings settings, QObject* 
 	{
 		try
 		{
-			this->detector = std::make_shared<ORTDetector_V2>(OrtBackend::TRT);
+			OrtGpuRuntimeConfig gpuConfig;
+			gpuConfig.trtEpOption.enableFp16 = true;
+			gpuConfig.trtEpOption.enableInt8 = false;
+			gpuConfig.trtEpOption.enableCudaGraph = true;
+			gpuConfig.trtEpOption.enableEngineCache = true;
+			gpuConfig.trtEpOption.enableTimingCache = true;
+			gpuConfig.cudaEpOption.enableCudaGraph = false;
+			gpuConfig.enableIoBinding = true;
+			gpuConfig.disableProviderSynchronization = true;
+			gpuConfig.warmupRuns = 3;
+			gpuConfig.nmsTopK = 1024;
+			gpuConfig.maxDetections = 300;
+
+			this->detector = std::make_shared<ORTDetector_V3>(OrtV3Backend::TRT, 0, gpuConfig);
 			detector->initConfig(settings);
 			break;
 		}
